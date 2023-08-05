@@ -191,7 +191,15 @@
    <!-- This needs to be removed before checking in-->
     <repository>
       <id>cdh.releases.repo</id>
-      <url>https://repository.cloudera.com/content/groups/cdh-releases-rcs</url>
+      <url>https://repository.cloudera.com/artifactory/libs-release-local</url>
+      <name>CDH Releases Repository</name>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>cdh.ext.releases.repo</id>
+      <url>https://repository.cloudera.com/artifactory/ext-release-local</url>
       <name>CDH Releases Repository</name>
       <snapshots>
         <enabled>false</enabled>
@@ -655,8 +663,8 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven.compiler.plugin.version}</version>
           <configuration>
-            <source>1.7</source>
-            <target>1.7</target>
+            <source>1.8</source>
+            <target>1.8</target>
           </configuration>
         </plugin>
         <plugin>

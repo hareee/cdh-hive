@@ -1774,6 +1774,8 @@ public class HiveConf extends Configuration {
         new TimeValidator(TimeUnit.SECONDS),
         "Number of seconds a request will wait to acquire the compile lock before giving up. " +
         "Setting it to 0s disables the timeout."),
+    HIVE_SERVER2_PARALLEL_COMPILATION("hive.driver.parallel.compilation", true, "Whether to\n" +
+      "enable parallel compilation between sessions on HiveServer2. The default is false."),
     // http (over thrift) transport settings
     HIVE_SERVER2_THRIFT_HTTP_PORT("hive.server2.thrift.http.port", 10001,
         "Port number of HiveServer2 Thrift interface when hive.server2.transport.mode is 'http'."),

@@ -136,12 +136,13 @@ public class Driver implements CommandProcessor {
   static final private String CLASS_NAME = Driver.class.getName();
   static final private Log LOG = LogFactory.getLog(CLASS_NAME);
   static final private LogHelper console = new LogHelper(LOG);
-  private final QueryInfo queryInfo;
+  private QueryInfo queryInfo;
 
   private int maxRows = 100;
   ByteStream.Output bos = new ByteStream.Output();
 
-  private HiveConf conf;
+  private final HiveConf conf;
+  private boolean isParallelEnabled = true;
   private DataInput resStream;
   private Context ctx;
   private DriverContext driverCxt;
@@ -169,7 +170,7 @@ public class Driver implements CommandProcessor {
 
   // Query hooks that execute before compilation and after execution
   private QueryLifeTimeHookRunner queryLifeTimeHookRunner;
-  private final HooksLoader hooksLoader;
+  private HooksLoader hooksLoader;
 
   public enum DriverState {
     INITIALIZED,
@@ -256,7 +257,7 @@ public class Driver implements CommandProcessor {
   /**
    * Get a Schema with fields represented with native Hive types
    */
-  public static Schema getSchema(BaseSemanticAnalyzer sem, HiveConf conf) {
+  private static Schema getSchema(BaseSemanticAnalyzer sem, HiveConf conf) {
     Schema schema = null;
 
     // If we have a plan, prefer its logical result schema if it's
@@ -347,6 +348,8 @@ public class Driver implements CommandProcessor {
    */
   public Driver(HiveConf conf) {
     this(conf, new HooksLoader(conf));
+    isParallelEnabled = (conf != null)
+      && HiveConf.getBoolVar(conf, ConfVars.HIVE_SERVER2_PARALLEL_COMPILATION);
   }
 
   public Driver(HiveConf conf, String userName) {
@@ -354,7 +357,9 @@ public class Driver implements CommandProcessor {
   }
 
   public Driver() {
-    this((SessionState.get() != null) ? SessionState.get().getConf() : null);
+    conf = (SessionState.get() != null) ? SessionState.get().getConf() : null;
+    isParallelEnabled = (conf != null)
+      && HiveConf.getBoolVar(conf, ConfVars.HIVE_SERVER2_PARALLEL_COMPILATION);
   }
 
   public Driver(HiveConf conf, HooksLoader hooksLoader) {
@@ -1346,18 +1351,24 @@ public class Driver implements CommandProcessor {
   private static final ReentrantLock globalCompileLock = new ReentrantLock();
   private int compileInternal(String command, boolean deferClose) {
     int ret;
-    LOG.debug("Acquire a monitor for compiling query");
-    final ReentrantLock compileLock = tryAcquireCompileLock(command);
+    LOG.info("isParallelEnabled:" + isParallelEnabled);
+    final ReentrantLock compileLock = isParallelEnabled
+      ? SessionState.get().getCompileLock() : globalCompileLock;
     if (compileLock == null) {
       return ErrorMsg.COMPILE_LOCK_TIMED_OUT.getErrorCode();
     }
-
+    compileLock.lock();
     try {
-      ret = compile(command, true, deferClose);
+      if (isParallelEnabled && LOG.isDebugEnabled()) {
+        LOG.debug("Entering compile: " + command);
+      }
+      ret = compile(command);
+      if (isParallelEnabled && LOG.isDebugEnabled()) {
+        LOG.debug("Done with compile: " + command);
+      }
     } finally {
       compileLock.unlock();
     }
-
     if (ret != 0) {
       try {
         releaseLocksAndCommitOrRollback(false);

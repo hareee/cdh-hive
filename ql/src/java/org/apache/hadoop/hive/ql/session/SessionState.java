@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
@@ -116,6 +117,9 @@ public class SessionState {
       new HashMap<String, Map<String, ColumnStatisticsObj>>();
 
   protected ClassLoader parentLoader;
+
+  // Session-scope compile lock.
+  private final ReentrantLock compileLock = new ReentrantLock();
 
   /**
    * current configuration.
@@ -347,6 +351,10 @@ public class SessionState {
       conf.setBoolVar(HiveConf.ConfVars.HIVESESSIONSILENT, isSilent);
     }
     this.isSilent = isSilent;
+  }
+
+  public ReentrantLock getCompileLock() {
+    return compileLock;
   }
 
   public boolean getIsVerbose() {

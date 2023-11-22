@@ -1938,8 +1938,8 @@ public class Driver implements CommandProcessor {
       queryDisplay.setHmsTimings(QueryDisplay.Phase.EXECUTION, executionHMSTimings);
 
       Map<String, MapRedStats> stats = SessionState.get().getMapRedStats();
+      long totalCpu = 0;
       if (stats != null && !stats.isEmpty()) {
-        long totalCpu = 0;
         console.printInfo("MapReduce Jobs Launched: ");
         for (Map.Entry<String, MapRedStats> entry : stats.entrySet()) {
           console.printInfo("Stage-" + entry.getKey() + ": " + entry.getValue());
@@ -1967,6 +1967,14 @@ public class Driver implements CommandProcessor {
         LOG.info("Executing command(queryId=" + queryId + ") has been interrupted after " + duration + " seconds");
       } else {
         LOG.info("Completed executing command(queryId=" + queryId + "); Time taken: " + duration + " seconds");
+        Long beginTime = queryInfo.getBeginTime();
+        Long endTime = queryInfo.getEndTime();
+        String engine = queryInfo.getExecutionEngine();
+        String logStr = String.format("Completed execute statement(UserName=%s, QueryId=%s, Engine=%s, BeginTime=%, EndTime=%s," +
+                "Duration=%s, TotalCpu=%s, QuerySQL=%s): %s" , userName, queryId, engine, beginTime, endTime, duration,
+                totalCpu, queryStr);
+        LOG.info("Completed executing command(queryId=" + queryId + "); Time taken: " + duration + " seconds");
+
       }
     }
 
